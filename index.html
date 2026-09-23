@@ -203,29 +203,6 @@ startButton.addEventListener("click", async () => {
   try {
 
     /*
-      Prefer front-facing camera.
-    */
-
-    if (webgazer.setCameraConstraints) {
-
-      webgazer.setCameraConstraints({
-
-        facingMode: "user",
-
-        width: {
-          ideal: 640
-        },
-
-        height: {
-          ideal: 480
-        }
-
-      });
-
-    }
-
-
-    /*
       Start WebGazer.
     */
 
