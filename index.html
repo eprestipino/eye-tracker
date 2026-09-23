@@ -206,37 +206,20 @@ startButton.addEventListener("click", async () => {
       Start WebGazer.
     */
 
-    await webgazer
-      .setRegression("ridge")
+    webgazer
+  .setRegression("ridge")
+  .setGazeListener((data) => {
 
-      .setGazeListener((data, elapsedTime) => {
+    if (!data || !tracking) return;
 
-        if (!data) return;
+    const x = Math.max(0, Math.min(window.innerWidth, data.x));
+    const y = Math.max(0, Math.min(window.innerHeight, data.y));
 
-        if (!tracking) return;
+    gazeDot.style.left = x + "px";
+    gazeDot.style.top = y + "px";
 
-
-        /*
-          Keep gaze dot inside display.
-        */
-
-        const x = Math.max(
-          0,
-          Math.min(window.innerWidth, data.x)
-        );
-
-        const y = Math.max(
-          0,
-          Math.min(window.innerHeight, data.y)
-        );
-
-
-        gazeDot.style.left = x + "px";
-        gazeDot.style.top = y + "px";
-
-      })
-
-      .begin();
+  })
+  .begin();
 
 
     /*
