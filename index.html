@@ -5,10 +5,11 @@
 
   <meta
     name="viewport"
-    content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
+    content="width=device-width, initial-scale=1, maximum-scale=1,
+    user-scalable=no, viewport-fit=cover"
   >
 
-  <title>iPhone Eye Tracker</title>
+  <title>Eye Tracker</title>
 
   <script src="https://cdn.jsdelivr.net/npm/webgazer@3.5.3/dist/webgazer.js"></script>
 
@@ -37,8 +38,8 @@
       justify-content: center;
       padding: 30px;
       text-align: center;
-      z-index: 20;
       background: #111;
+      z-index: 1000;
     }
 
     #startButton {
@@ -56,41 +57,45 @@
       width: 80%;
       text-align: center;
       font-size: 18px;
-      z-index: 15;
+      background: rgba(0,0,0,.7);
+      padding: 8px;
+      border-radius: 10px;
+      z-index: 900;
       pointer-events: none;
     }
 
     #target {
       position: fixed;
-      width: 60px;
-      height: 60px;
+      width: 65px;
+      height: 65px;
       border-radius: 50%;
       background: #00e676;
       border: 5px solid white;
       transform: translate(-50%, -50%);
       display: none;
-      z-index: 30;
       align-items: center;
       justify-content: center;
       color: black;
       font-size: 22px;
       font-weight: bold;
+      z-index: 950;
       user-select: none;
       -webkit-user-select: none;
       touch-action: manipulation;
     }
 
+    /* Our large gaze visualization */
     #gazeDot {
       position: fixed;
-      width: 28px;
-      height: 28px;
+      width: 30px;
+      height: 30px;
       border-radius: 50%;
       background: red;
       border: 3px solid white;
       transform: translate(-50%, -50%);
       pointer-events: none;
       display: none;
-      z-index: 100;
+      z-index: 999;
     }
 
     #recalibrate {
@@ -103,26 +108,31 @@
       border: none;
       border-radius: 10px;
       display: none;
-      z-index: 50;
+      z-index: 1000;
     }
   </style>
 </head>
 
+
 <body>
 
 <div id="startScreen">
+
   <h1>Eye Tracker</h1>
 
   <p>
-    Hold the phone normally.<br>
-    Keep your head reasonably still.<br><br>
-
-    During calibration, LOOK directly at each green circle
-    and tap it 5 times.
+    Hold the device normally.<br>
+    Keep your head reasonably still.
+    <br><br>
+    Look directly at each green circle and tap it 5 times.
   </p>
 
-  <button id="startButton">Start Eye Tracking</button>
+  <button id="startButton">
+    Start Eye Tracking
+  </button>
+
 </div>
+
 
 <div id="status"></div>
 
@@ -137,23 +147,24 @@
 
 <script>
 
-const startScreen = document.getElementById("startScreen");
-const startButton = document.getElementById("startButton");
+const startScreen =
+  document.getElementById("startScreen");
 
-const target = document.getElementById("target");
-const status = document.getElementById("status");
-const gazeDot = document.getElementById("gazeDot");
+const startButton =
+  document.getElementById("startButton");
+
+const target =
+  document.getElementById("target");
+
+const status =
+  document.getElementById("status");
+
+const gazeDot =
+  document.getElementById("gazeDot");
 
 const recalibrateButton =
   document.getElementById("recalibrate");
 
-
-/*
-  Calibration locations.
-
-  Percentages keep the targets away from
-  the extreme edges of the iPhone display.
-*/
 
 const calibrationPoints = [
 
@@ -172,20 +183,18 @@ const calibrationPoints = [
 ];
 
 
-let currentPoint = 0;
-
 const clicksPerPoint = 5;
 
+let currentPoint = 0;
 let clicksAtPoint = 0;
 
 let tracking = false;
-
 let started = false;
 
 
-/*
-  START WEBGAZER
-*/
+/* =========================
+   START WEBGAZER
+   ========================= */
 
 startButton.addEventListener("click", async () => {
 
@@ -195,48 +204,114 @@ startButton.addEventListener("click", async () => {
 
   startButton.disabled = true;
 
-  startButton.innerText = "Starting camera...";
+  startButton.innerText =
+    "Starting camera...";
 
   status.innerText =
-    "Starting eye tracker... Allow camera access.";
+    "Allow camera access";
+
 
   try {
 
     /*
-      Start WebGazer.
+      Don't restore calibration from an
+      earlier browser session.
     */
 
-    webgazer
-  .setRegression("ridge")
-  .setGazeListener((data) => {
+    webgazer.saveDataAcrossSessions(false);
 
-    if (!data || !tracking) return;
 
-    const x = Math.max(0, Math.min(window.innerWidth, data.x));
-    const y = Math.max(0, Math.min(window.innerHeight, data.y));
+    await webgazer
 
-    gazeDot.style.left = x + "px";
-    gazeDot.style.top = y + "px";
+      .setRegression("ridge")
 
-  })
-  .begin();
+      .setGazeListener((data) => {
+
+        if (!data) return;
+
+        /*
+          Only display our red dot once
+          calibration has finished.
+        */
+
+        if (!tracking) return;
+
+
+        let x = data.x;
+        let y = data.y;
+
+
+        /*
+          Keep dot inside the screen.
+        */
+
+        x = Math.max(
+          0,
+          Math.min(window.innerWidth, x)
+        );
+
+        y = Math.max(
+          0,
+          Math.min(window.innerHeight, y)
+        );
+
+
+        gazeDot.style.left =
+          x + "px";
+
+        gazeDot.style.top =
+          y + "px";
+
+
+        gazeDot.style.display =
+          "block";
+
+      })
+
+      .begin();
 
 
     /*
-      Show camera/face detection.
+      Camera + face box.
     */
 
     webgazer.showVideoPreview(true);
 
     webgazer.showFaceOverlay(true);
 
+    webgazer.showFaceFeedbackBox(true);
+
+
+    /*
+      Hide WebGazer's prediction point
+      UNTIL calibration is completed.
+    */
+
     webgazer.showPredictionPoints(false);
 
 
     /*
-      We manually provide calibration coordinates,
-      so disable WebGazer's automatic mouse training
-      if this function exists.
+      Slightly smooth predictions.
+    */
+
+    if (webgazer.applyKalmanFilter) {
+
+      webgazer.applyKalmanFilter(true);
+
+    }
+
+
+    /*
+      Clear old calibration.
+    */
+
+    webgazer.clearData();
+
+
+    /*
+      We manually feed calibration points,
+      so prevent WebGazer from learning
+      from random clicks elsewhere.
     */
 
     if (webgazer.removeMouseEventListeners) {
@@ -246,24 +321,16 @@ startButton.addEventListener("click", async () => {
     }
 
 
-    /*
-      Clear old calibration.
-    */
+    startScreen.style.display =
+      "none";
 
-    if (webgazer.clearData) {
-
-      webgazer.clearData();
-
-    }
-
-
-    startScreen.style.display = "none";
 
     status.innerText =
-      "Keep your face visible in the camera.";
+      "Camera ready — keep your face visible";
+
 
     /*
-      Give face detection a moment to initialize.
+      Let face tracking stabilize briefly.
     */
 
     setTimeout(() => {
@@ -273,14 +340,19 @@ startButton.addEventListener("click", async () => {
     }, 1500);
 
 
-  } catch (error) {
+  }
+
+  catch (error) {
 
     console.error(error);
 
     status.innerText =
-      "Could not start camera / WebGazer.";
+      "ERROR: " + error.message;
 
     startButton.disabled = false;
+
+    startButton.innerText =
+      "Try Again";
 
     started = false;
 
@@ -289,17 +361,22 @@ startButton.addEventListener("click", async () => {
 });
 
 
-/*
-  BEGIN CALIBRATION
-*/
+/* =========================
+   START CALIBRATION
+   ========================= */
 
 function beginCalibration() {
 
   tracking = false;
 
-  gazeDot.style.display = "none";
+  gazeDot.style.display =
+    "none";
 
-  recalibrateButton.style.display = "none";
+  webgazer.showPredictionPoints(false);
+
+
+  recalibrateButton.style.display =
+    "none";
 
 
   currentPoint = 0;
@@ -307,24 +384,25 @@ function beginCalibration() {
   clicksAtPoint = 0;
 
 
-  if (webgazer.clearData) {
+  /*
+    Throw away previous calibration.
+  */
 
-    webgazer.clearData();
-
-  }
+  webgazer.clearData();
 
 
   status.innerText =
-    "LOOK at the green circle and tap it 5 times.";
+    "LOOK directly at the green circle and tap it 5 times";
+
 
   showCalibrationPoint();
 
 }
 
 
-/*
-  POSITION CURRENT CALIBRATION TARGET
-*/
+/* =========================
+   DISPLAY TARGET
+   ========================= */
 
 function showCalibrationPoint() {
 
@@ -341,67 +419,83 @@ function showCalibrationPoint() {
 
   clicksAtPoint = 0;
 
+
   target.innerText =
     clicksPerPoint;
 
-  target.style.display = "flex";
+
+  target.style.display =
+    "flex";
 
 }
 
 
-/*
-  RECORD CALIBRATION SAMPLE
-*/
+/* =========================
+   CALIBRATION TAP
+   ========================= */
 
-target.addEventListener("pointerdown", (event) => {
+target.addEventListener(
+  "pointerdown",
 
-  event.preventDefault();
+  (event) => {
 
-  if (tracking) return;
-
-
-  /*
-    Find exact center of calibration target.
-  */
-
-  const rect =
-    target.getBoundingClientRect();
-
-  const x =
-    rect.left + rect.width / 2;
-
-  const y =
-    rect.top + rect.height / 2;
+    event.preventDefault();
 
 
-  /*
-    Tell WebGazer:
-
-    "The user's eyes are looking at THIS
-     screen coordinate right now."
-  */
-
-  webgazer.recordScreenPosition(
-    x,
-    y,
-    "click"
-  );
+    if (tracking) return;
 
 
-  clicksAtPoint++;
+    const rect =
+      target.getBoundingClientRect();
 
 
-  const remaining =
-    clicksPerPoint - clicksAtPoint;
+    const x =
+      rect.left +
+      rect.width / 2;
 
 
-  if (remaining > 0) {
+    const y =
+      rect.top +
+      rect.height / 2;
 
-    target.innerText = remaining;
 
-  } else {
+    /*
+      Explicitly tell WebGazer:
+      eyes are looking at (x,y).
+    */
 
-    target.style.display = "none";
+    webgazer.recordScreenPosition(
+      x,
+      y,
+      "click"
+    );
+
+
+    clicksAtPoint++;
+
+
+    const remaining =
+      clicksPerPoint -
+      clicksAtPoint;
+
+
+    if (remaining > 0) {
+
+      target.innerText =
+        remaining;
+
+      return;
+
+    }
+
+
+    /*
+      Move to next calibration point.
+    */
+
+    target.style.display =
+      "none";
+
 
     currentPoint++;
 
@@ -412,7 +506,8 @@ target.addEventListener("pointerdown", (event) => {
     ) {
 
       status.innerText =
-        "Good — now look at the next circle.";
+        "Good — look at the next circle";
+
 
       setTimeout(() => {
 
@@ -420,77 +515,117 @@ target.addEventListener("pointerdown", (event) => {
 
       }, 300);
 
-    } else {
+    }
+
+    else {
 
       finishCalibration();
 
     }
 
   }
+);
 
-});
 
-
-/*
-  FINISH CALIBRATION
-*/
+/* =========================
+   CALIBRATION FINISHED
+   ========================= */
 
 function finishCalibration() {
 
-  target.style.display = "none";
+  target.style.display =
+    "none";
+
 
   tracking = true;
 
-  gazeDot.style.display = "block";
 
-  recalibrateButton.style.display = "block";
+  /*
+    Our red dot
+  */
+
+  gazeDot.style.display =
+    "block";
+
+
+  /*
+    ALSO show WebGazer's own built-in
+    gaze prediction visualization.
+
+    This is useful for debugging:
+    BOTH dots should move with your gaze.
+  */
+
+  webgazer.showPredictionPoints(true);
+
+
+  recalibrateButton.style.display =
+    "block";
 
 
   status.innerText =
-    "CALIBRATED — look around the screen. The red dot should follow your gaze.";
+    "CALIBRATED — move your eyes around the screen";
+
+
+  setTimeout(() => {
+
+    status.innerText = "";
+
+  }, 3000);
 
 }
 
 
-/*
-  RECALIBRATION
-*/
+/* =========================
+   RECALIBRATE
+   ========================= */
 
-recalibrateButton.addEventListener("click", () => {
+recalibrateButton.addEventListener(
+  "click",
 
-  status.innerText =
-    "Recalibrating...";
+  () => {
 
-  setTimeout(() => {
-
-    beginCalibration();
-
-  }, 400);
-
-});
+    status.innerText =
+      "Recalibrating...";
 
 
-/*
-  Prevent accidental zooming from double taps.
-*/
+    setTimeout(() => {
+
+      beginCalibration();
+
+    }, 300);
+
+  }
+);
+
+
+/* Prevent accidental double-tap zoom */
 
 let lastTouchEnd = 0;
 
 document.addEventListener(
   "touchend",
-  function(event) {
 
-    const now = Date.now();
+  (event) => {
 
-    if (now - lastTouchEnd <= 300) {
+    const now =
+      Date.now();
+
+
+    if (
+      now - lastTouchEnd <= 300
+    ) {
 
       event.preventDefault();
 
     }
 
-    lastTouchEnd = now;
+
+    lastTouchEnd =
+      now;
 
   },
+
   false
 );
 
