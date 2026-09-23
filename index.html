@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Eye Tracker</title>
+  <script src="https://cdn.jsdelivr.net/npm/webgazer@3.5.3/dist/webgazer.js"></script>
+
+  <style>
+    body {
+      margin: 0;
+      background: #111;
+      color: white;
+      font-family: Arial;
+      text-align: center;
+    }
+
+    button {
+      margin-top: 40px;
+      font-size: 24px;
+      padding: 15px 25px;
+    }
+
+    #dot {
+      position: fixed;
+      width: 25px;
+      height: 25px;
+      border-radius: 50%;
+      background: red;
+      pointer-events: none;
+      transform: translate(-50%, -50%);
+    }
+  </style>
+</head>
+
+<body>
+
+<h1>WebGazer iPhone Test</h1>
+<button onclick="startTracking()">Start Eye Tracking</button>
+<div id="dot"></div>
+
+<script>
+async function startTracking() {
+
+  await webgazer
+    .setRegression("ridge")
+    .setGazeListener((data) => {
+      if (!data) return;
+
+      const dot = document.getElementById("dot");
+      dot.style.left = data.x + "px";
+      dot.style.top = data.y + "px";
+    })
+    .begin();
+
+  webgazer.showVideoPreview(true);
+  webgazer.showFaceOverlay(true);
+  webgazer.showPredictionPoints(false);
+}
+</script>
+
+</body>
+</html>
